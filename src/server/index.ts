@@ -54,14 +54,23 @@ export class Chat extends Server<Env> {
       this.messages.push(message);
     }
 
+    // this.ctx.storage.sql.exec(
+    //   `INSERT INTO messages (id, user, role, content) VALUES ('${
+    //     message.id
+    //   }', '${message.user}', '${message.role}', ${JSON.stringify(
+    //     message.content,
+    //   )}) ON CONFLICT (id) DO UPDATE SET content = ${JSON.stringify(
+    //     message.content,
+    //   )}`,
+    // );
+
+     // PartyKit 的 sql.exec 方法支持使用数组参数来安全地绑定值
+    // 这里需要为 INSERT 和 UPDATE 语句提供参数
     this.ctx.storage.sql.exec(
-      `INSERT INTO messages (id, user, role, content) VALUES ('${
-        message.id
-      }', '${message.user}', '${message.role}', ${JSON.stringify(
-        message.content,
-      )}) ON CONFLICT (id) DO UPDATE SET content = ${JSON.stringify(
-        message.content,
-      )}`,
+      `INSERT INTO messages (id, user, role, content)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT (id) DO UPDATE SET content = ?`,
+       ...[message.id, message.user, message.role, message.content, message.content]
     );
   }
 
