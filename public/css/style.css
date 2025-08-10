@@ -1,0 +1,109 @@
+﻿
+.CopyTip {
+    visibility: hidden;
+}
+.msg {
+    display: inline; 
+    margin: 0; 
+    padding: 0;
+}
+/* 使用 :has() 选择包含 .msg 的 li 元素，并在 .msg 悬停时改变 span 的样式 */
+/*li:has(.msg:hover) .CopyTip {
+    visibility: visible;
+    opacity: 1;
+}*/
+.lsmsg:hover > .CopyTip {
+    visibility: visible;
+    opacity: 1;
+}
+/*body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: Arial, sans-serif;
+}*/
+
+
+/*moblie style start */
+/* 默认样式 */
+.form-group .row {
+    display: flex;
+    align-items: center;
+}
+
+#editor {
+    height: 250px; /* 设定 editor 高度 */
+}
+
+/* 手机端样式 */
+@media (max-width: 767px) {
+    .form-group .row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    #editor {
+        height: 250px; /* 适当调整 editor 高度 */
+    }
+
+    #send, #Browse {
+        width: 100%;
+        margin-top: 15px;
+    }
+}
+
+
+/*moblie style end */
+
+.chat-container {
+    width: 400px;
+    height: 500px;
+    border: 1px solid #ccc;
+    overflow-y: auto;
+    padding: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.messages {
+    height: 400px;
+    overflow-y: auto;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 10px;
+}
+
+.message {
+    margin-bottom: 10px;
+    padding: 5px 10px;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+}
+
+#messageForm {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+#messageInput {
+    flex-grow: 1;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+#messageForm button {
+    padding: 8px 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+    #messageForm button:hover {
+        background-color: #0056b3;
+    }
