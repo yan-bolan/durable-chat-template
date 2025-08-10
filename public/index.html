@@ -1,99 +1,48 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+  <head>
+    <!-- Basic Page Needs
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+    <meta charset="utf-8" />
+    <title>Chat!</title>
+    <meta name="description" content="" />
+    <meta name="author" content="" />
 
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SignalRChat</title>
-  <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" />
-  <link rel="stylesheet" href="/css/site.css" />
-  <link rel="stylesheet" href="/SignalRChat.styles.css" />
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="/css/quill.snow.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" />
-</head>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-  <script src="/lib/jquery/dist/jquery.js"></script>
-  <script src="/lib/bootstrap/dist/js/bootstrap.bundle.js"></script>
-  <!-- Include the Quill library -->
-  <!-- @* <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script> *@ -->
-  <script src="/js/quill.js"></script>
-<body>
-  <header>
-    <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-    </nav>
-  </header>
-  <div class="container">
-    <main role="main" class="pb-3">
-      <div class="form-group row">
-        <label for="userInput" class="col-2 col-form-label">User</label>
-        <div class="col col-sm-6">
-          <input id="userInput" class="form-control" />
+    <!-- Mobile Specific Metas
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- FONT
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+
+    <!-- CSS
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+    <link rel="stylesheet" href="css/normalize.css" />
+    <link rel="stylesheet" href="css/skeleton.css" />
+    <link rel="stylesheet" href="styles.css" />
+
+    <!-- Favicon
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+    <link rel="icon" type="image/ico" href="favicon.ico" />
+    <script src="/dist/index.js" type="module"></script>
+  </head>
+  <body>
+    <!-- Primary Page Layout
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+    <div class="container" style="width: 95%; height: 100%">
+      <div class="row" style="height: 100%">
+        <div class="one-third column" style="margin-top: 25%">
+          <h4><b>Chat</b>, powered by Durable Objects</h4>
+          <p>
+            This chat room is hosted in a single Durable Object, running in one
+            process in one machine in one location, very close to the users.
+          </p>
         </div>
+        <div class="two-thirds column" id="root"></div>
       </div>
+    </div>
 
-      <div class="form-group row">
-        <label for="message" class="col-2 col-form-label">Message</label>
-        <div class="col col-sm-6">
-          <div id="editor"></div>
-        </div>
-      </div>
-
-      <button id="send" type="button" class="btn btn-primary">Send Message</button>
-      <button type="button" id="Browse" class="btn btn-success">Browse</button>
-      <input type="file" id="f" style="display:none;" />
-      <div id="drop-zone" style="border: 2px dashed #ccc; padding: 20px; text-align: center;"> Drag and drop files here
-      </div>
-      <hr>
-
-      <ul id="messageList">
-        <li class="lsmsg">
-          <span class="CopyTip" onclick="copyContent(this)">
-            <svg style="display:inline" t="1724328544012" class="icon" viewBox="0 0 1024 1024" version="1.1"
-              xmlns="http://www.w3.org/2000/svg" p-id="1486" width="18" height="18">
-              <path style="display:inline" d="M960 960H256V256h704v704z m-640-64h576V320H320v576z" fill="#727272"
-                p-id="1487"></path>
-              <path d="M192 800H64V64h736v128h-64v-64H128v608h64z" fill="#727272" p-id="1488"></path>
-              <path style="display:inline"
-                d="M752.7 395.7L629.4 672.4h-48.1L460.4 395.7h48.1L598.9 612c3 7.1 5.3 15.4 6.7 24.8h1.1c1.2-8.2 3.7-16.6 7.6-25.2l92.1-216h46.3z"
-                fill="#E6C27C" p-id="1489"></path>
-              <path style="display:inline" d="M416 736h384v64H416z" fill="#727272" p-id="1490"></path>
-            </svg>
-          </span>
-          <pre class="msg">ddtest</pre>
-        </li>
-        <li>
-          <pre class="msg">
-                        <button class="btn btn-primary" onclick="downloadfun('')">&nbsp; Download </button>
-                    </pre>
-        </li>
-      </ul>
-
-    </main>
-  </div>
-  <script src="/js/site.js"  ></script>
-  <!-- <script src="/js/signalr.js"></script> -->
-  <!-- <script src="/chat.js"></script>  -->
-
-  <script>
-    //< !--Initialize Quill editor-- >
-        const quill = new Quill('#editor', {
-            theme: 'snow'
-        });
-
-    async function copyContent(args) {
-      let text = args.nextElementSibling.textContent;
-      try {
-        await navigator.clipboard.writeText(text);
-        console.log('Content copied to clipboard');
-        toastr.success('copied!');
-      } catch (err) {
-        console.error('Failed to copy: ', err);
-        toastr.error('copy failed!');
-      }
-    }
-  </script>
-
-</body>
-
+    <!-- End Document
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  </body>
 </html>
