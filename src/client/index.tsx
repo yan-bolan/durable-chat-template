@@ -12,6 +12,7 @@ import { usePartySocket } from "partysocket/react";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
 import toast, { Toaster } from 'react-hot-toast';
+// import  'styles.css'; //  
 
 // Tailwind CSS is assumed to be available
 const TailwindScript = () => (
@@ -303,7 +304,17 @@ function App() {
       }
     }
   }
-
+  const openInNewWindow = (content: string) => {
+    const blob = new Blob([content], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+    if (newWindow) {
+      // 确保在窗口关闭时释放内存
+      newWindow.onunload = () => {
+        URL.revokeObjectURL(url);
+      };
+    }
+  };
   return (
     <>
       <TailwindScript />
@@ -315,6 +326,34 @@ function App() {
           }
           .ql-container {
             font-size: 16px;
+          }
+               /* 为 pre 标签添加样式 */
+          pre {
+            background-color: #f4f4f4;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            word-wrap: break-word;
+            overflow:auto;
+          }
+
+          /* 为 li 标签添加一条杠杠 */
+          li {
+            list-style-type: none;
+            position: relative;
+            padding-left: 20px;
+          }
+
+          li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 2px;
+            height: 80%;
+            background-color: #e2e8f0;
           }
         `}
       </style>
@@ -331,39 +370,55 @@ function App() {
               </div>
               <li>
                 <div className="w-4/5 break-words">
-                <span className="CopyTip hidden group-hover:block cursor-pointer" onClick={() => copyToClipboard(message.content)}>
-                  <svg
-                    style={{ display: 'inline' }}
-                    data-t="1724328544012"
-                    className="icon"
-                    viewBox="0 0 1024 1024"
-                    version="1.1"
-                    xmlns="http://www.w3.org/2000/svg"
-                    data-p-id="1486"
-                    width="18"
-                    height="18"
+                  <span className="CopyTip hidden group-hover:block cursor-pointer" onClick={() => copyToClipboard(message.content)}>
+                    <svg
+                      style={{ display: 'inline' }}
+                      data-t="1724328544012"
+                      className="icon"
+                      viewBox="0 0 1024 1024"
+                      version="1.1"
+                      xmlns="http://www.w3.org/2000/svg"
+                      data-p-id="1486"
+                      width="18"
+                      height="18"
+                    >
+                      <path d="M960 960H256V256h704v704z m-640-64h576V320H320v576z" fill="#727272" data-p-id="1487"></path>
+                      <path d="M192 800H64V64h736v128h-64v-64H128v608h64z" fill="#727272" data-p-id="1488"></path>
+                      <path d="M752.7 395.7L629.4 672.4h-48.1L460.4 395.7h48.1L598.9 612c3 7.1 5.3 15.4 6.7 24.8h1.1c1.2-8.2 3.7-16.6 7.6-25.2l92.1-216h46.3z" fill="#E6C27C" data-p-id="1489"></path>
+                      <path d="M416 736h384v64H416z" fill="#727272" data-p-id="1490"></path>
+                    </svg>
+                  </span>
+                  {/* 新窗口打开图标 */}
+                  <span
+                    className="OpenTip hidden group-hover:block cursor-pointer ml-2" // 使用 ml-2 添加左侧间距
+                   onClick={() => openInNewWindow(message.content)}
                   >
-                    <path d="M960 960H256V256h704v704z m-640-64h576V320H320v576z" fill="#727272" data-p-id="1487"></path>
-                    <path d="M192 800H64V64h736v128h-64v-64H128v608h64z" fill="#727272" data-p-id="1488"></path>
-                    <path d="M752.7 395.7L629.4 672.4h-48.1L460.4 395.7h48.1L598.9 612c3 7.1 5.3 15.4 6.7 24.8h1.1c1.2-8.2 3.7-16.6 7.6-25.2l92.1-216h46.3z" fill="#E6C27C" data-p-id="1489"></path>
-                    <path d="M416 736h384v64H416z" fill="#727272" data-p-id="1490"></path>
-                  </svg>
-                </span>
-                {/* 根据消息类型判断如何渲染 */}
-                {message.msgtype === "file" ? (
-                  // 渲染文件链接
-                  <div>
-                    <a href={message.content} download={message.fileName} className="text-blue-500 hover:underline">
-                      {message.fileName}
-                    </a>
-                  </div>
-                ) : (
-                  // 渲染预格式化文本,包含html标签
-                  // <pre><div dangerouslySetInnerHTML={{ __html: message.content }} /></pre>
-                  // 不使用 dangerouslySetInnerHTML 时，可以直接渲染文本
-                  <pre>{message.content}</pre>
-                )}
-              </div>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="#727272"
+                    >
+                      <path d="M0 0h24v24H0V0z" fill="none" />
+                      <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" />
+                    </svg>
+                  </span>
+                  {/* 根据消息类型判断如何渲染 */}
+                  {message.msgtype === "file" ? (
+                    // 渲染文件链接
+                    <div>
+                      <a href={message.content} download={message.fileName} className="text-blue-500 hover:underline">
+                        {message.fileName}
+                      </a>
+                    </div>
+                  ) : (
+                    // 渲染预格式化文本,包含html标签
+                    // <pre><div dangerouslySetInnerHTML={{ __html: message.content }} /></pre>
+                    // 不使用 dangerouslySetInnerHTML 时，可以直接渲染文本
+                    <pre className="msgcontent">{message.content}</pre>
+                  )}
+                </div>
               </li>
             </div>
           ))}
@@ -378,7 +433,7 @@ function App() {
             var quiall_text = editorRef?.current?.getEditor()?.getText(); // 
             const chatMessage: ChatMessage = {
               id: nanoid(8),
-              content: quiall_text||quillContent,
+              content: quiall_text || quillContent,
               user: name,
               role: "user",
             };
