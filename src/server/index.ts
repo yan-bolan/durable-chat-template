@@ -46,7 +46,7 @@ export class Chat extends Server<Env> {
   }
   // 添加一个清理方法
   cleanOldMessages() {
-    const oneDayAgo = Date.now() - 4 * 60 * 60 * 1000; // 设置过期时间，例如 1 天
+    const oneDayAgo = Date.now() - 3 * 60 * 60 * 1000; // 设置过期时间，例如 1 天
 
     // 从数据库中删除所有超过 24 小时（1 天）的消息
     this.ctx.storage.sql.exec("DELETE FROM messages WHERE timestamp < ?", ...[oneDayAgo]);

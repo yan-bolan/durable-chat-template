@@ -358,8 +358,10 @@ function App() {
                     </a>
                   </div>
                 ) : (
-                  // 渲染普通文本
-                  <div dangerouslySetInnerHTML={{ __html: message.content }} />
+                  // 渲染预格式化文本,包含html标签
+                  // <pre><div dangerouslySetInnerHTML={{ __html: message.content }} /></pre>
+                  // 不使用 dangerouslySetInnerHTML 时，可以直接渲染文本
+                  <pre>{message.content}</pre>
                 )}
               </div>
               </li>
@@ -373,9 +375,10 @@ function App() {
           onSubmit={(e) => {
             e.preventDefault();
             if (quillContent.trim() === "") return;
+            var quiall_text = editorRef?.current?.getEditor()?.getText(); // 
             const chatMessage: ChatMessage = {
               id: nanoid(8),
-              content: quillContent,
+              content: quiall_text||quillContent,
               user: name,
               role: "user",
             };
