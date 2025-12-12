@@ -414,9 +414,9 @@ function App() {
                     </div>
                   ) : (
                     // 渲染预格式化文本,包含html标签
-                    // <pre><div dangerouslySetInnerHTML={{ __html: message.content }} /></pre>
+                    <pre><div dangerouslySetInnerHTML={{ __html: message.content }} /></pre>
                     // 不使用 dangerouslySetInnerHTML 时，可以直接渲染文本
-                    <pre className="msgcontent">{message.content}</pre>
+                    // <pre className="msgcontent whitespace-pre-wrap">{message.content}</pre>
                   )}
                 </div>
               </li>
@@ -433,7 +433,7 @@ function App() {
             var quiall_text = editorRef?.current?.getEditor()?.getText(); // 
             const chatMessage: ChatMessage = {
               id: nanoid(8),
-              content: quiall_text || quillContent,
+              content:  quillContent ||quiall_text ,
               user: name,
               role: "user",
             };

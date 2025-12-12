@@ -1,1 +1,23 @@
- 
+ .site-footer {
+    display: flex; /* 將 footer 內容設為 flex 容器 */
+    justify-content: flex-start; /* 內容靠左對齊 */
+    align-items: center; /* 內容垂直居中 */
+    flex-wrap: wrap; /* 如果內容太多，可以允許換行，但預設不換行 */
+    gap: 10px; /* 連結和文字之間的間距 */
+}
+
+.footer-links {
+    display: inline-flex; /* 讓連結群組也能盡量排在一行 */
+    align-items: center;
+    gap: 5px; /* 連結之間的間距 */
+}
+
+.footer-links a {
+    display: inline; /* 連結本身是行內元素 */
+    text-decoration: none; /* 可以選擇移除底線 */
+    color: inherit; /* 繼承父元素顏色 */
+}
+
+.footer-copyright {
+    margin-left: auto; /* 讓版權資訊靠右對齊 */
+} 
