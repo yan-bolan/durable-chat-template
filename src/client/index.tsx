@@ -370,7 +370,21 @@ function App() {
               </div>
               <li>
                 <div className="w-4/5 break-words">
-                  <span className="CopyTip hidden group-hover:block cursor-pointer" onClick={() => copyToClipboard(message.content)}>
+                  {/* 根据消息类型判断如何渲染 */}
+                  {message.msgtype === "file" ? (
+                    // 渲染文件链接
+                    <div>
+                      <a href={message.content} download={message.fileName} className="text-blue-500 hover:underline">
+                        {message.fileName}
+                      </a>
+                    </div>
+                  ) : (
+                    // 渲染预格式化文本,包含html标签
+                    <pre><div dangerouslySetInnerHTML={{ __html: message.content }} /></pre>
+                    // 不使用 dangerouslySetInnerHTML 时，可以直接渲染文本
+                    // <pre className="msgcontent whitespace-pre-wrap">{message.content}</pre>
+                  )}
+                    <span className="CopyTip hidden group-hover:block cursor-pointer" onClick={() => copyToClipboard(message.content)}>
                     <svg
                       style={{ display: 'inline' }}
                       data-t="1724328544012"
@@ -404,20 +418,6 @@ function App() {
                       <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" />
                     </svg>
                   </span>
-                  {/* 根据消息类型判断如何渲染 */}
-                  {message.msgtype === "file" ? (
-                    // 渲染文件链接
-                    <div>
-                      <a href={message.content} download={message.fileName} className="text-blue-500 hover:underline">
-                        {message.fileName}
-                      </a>
-                    </div>
-                  ) : (
-                    // 渲染预格式化文本,包含html标签
-                    <pre><div dangerouslySetInnerHTML={{ __html: message.content }} /></pre>
-                    // 不使用 dangerouslySetInnerHTML 时，可以直接渲染文本
-                    // <pre className="msgcontent whitespace-pre-wrap">{message.content}</pre>
-                  )}
                 </div>
               </li>
             </div>
