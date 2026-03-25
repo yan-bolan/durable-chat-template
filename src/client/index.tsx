@@ -141,17 +141,18 @@ function App() {
     document.body.removeChild(tempElement);
   };
   // 处理文件函数
-  const handleFiles_big = async (files: FileList) => {
+  // 新增或修改 handleFiles 函数
+  const handleFiles = async (files: FileList) => {
     // 遍历文件列表
     for (const file of Array.from(files)) {
-      // Array.from(files).forEach(async (file) => {
+      // 检查文件大小，限制为 15MB
+      if (file.size > 15 * 1024 * 1024) {
+        toast.error('文件过大，请上传小于 15MB 的文件。');
+        return;
+      }
       // 创建一个加载中的 Toast，并保存它的 id
       const toastId = toast.loading(`正在上传 ${file.name}...`);
       console.log("正在处理文件:", file.name, file.type, file.size);
-      // 在这里添加将文件发送到服务器的逻辑
-      // 例如，你可以将文件名插入到 quillContent 中
-      // const messageContent = `上传了文件: ${file.name}`;
-      // setQuillContent(messageContent);
       const formData = new FormData();
       formData.append("file", file);
 
@@ -195,50 +196,6 @@ function App() {
         console.error("Error uploading file:", error);
       }
     };
-  };
-  // 新增或修改 handleFiles 函数
-  const handleFiles = (files: FileList) => {
-    Array.from(files).forEach((file) => {
-      // 检查文件大小，例如限制为 5MB
-      if (file.size > 5 * 1024 * 1024) {
-
-        //如果大于15MB，则不上传
-        if (file.size > 15 * 1024 * 1024) {
-          toast.error('文件过大，请上传小于 15MB 的文件。');
-          return;
-        }
-        handleFiles_big(files);
-        return;
-      }
-      // 创建一个加载中的 Toast
-      const toastId = toast.loading(`正在上传 ${file.name}...`);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64Content = event.target?.result as string;
-
-        const chatMessage: ChatMessage = {
-          id: nanoid(8),
-          content: base64Content,
-          user: name,
-          role: "user",
-          // 添加一个新字段来标识消息类型
-          msgtype: "file",
-          fileName: file.name,
-          fileType: file.type
-        };
-
-        // 发送 Base64 编码的文件消息
-        socket.send(
-          JSON.stringify({
-            type: "add",
-            ...chatMessage,
-          })
-        );
-      };
-      reader.readAsDataURL(file);
-      // 发送成功后更新 Toast 为成功提示
-      toast.success(`${file.name} 上传成功！`, { id: toastId });
-    });
   };
   // 处理文件输入框的 onChange 事件
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -465,7 +422,7 @@ function App() {
             SEND
           </button>
           <button type="button" id="Browse" className="btn btn-success" onClick={() => fileInputRef.current?.click()}>Browse</button>
-          <input type="file" id="f" style={{ display: "none" }} ref={fileInputRef} onChange={handleFileChange} />
+          <input type="file" id="f" style={{ display: "none" }} ref={fileInputRef} onChange={handleFileChange} multiple />
           <div id="drop-zone" ref={dropZoneRef} style={{ border: "2px dashed #ccc", padding: "20px", textAlign: "center" }}> Drag and drop files here </div>
 
         </form>

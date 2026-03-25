@@ -40,3 +40,7 @@ A live public deployment of this template is available at [https://durable-chat-
    ```bash
    npx wrangler tail
    ```
+4. run dev
+   ```bash
+   npm run dev
+   ```
