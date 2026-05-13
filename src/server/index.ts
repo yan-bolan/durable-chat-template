@@ -7,6 +7,12 @@ import {
 
 import type { ChatMessage, Message } from "../shared";
 
+function makeSafeR2Key(fileName: string) {
+  const safeName = fileName.replace(/[^a-zA-Z0-9_.-]/g, "_");
+  const randomPart = Math.random().toString(36).slice(2, 10);
+  return `${Date.now()}-${randomPart}-${safeName}`;
+}
+
 export class Chat extends Server<Env> {
   static options = { hibernate: true };
 
@@ -123,45 +129,137 @@ async function handleFileUpload(request: Request, env: Env) {
       return new Response("No file uploaded", { status: 400 });
     }
 
-    // 在这里处理文件
-    // 1. 将文件保存到持久化存储（例如 R2 或其他云存储）
-    // 2. 获取文件的 URL
-    // 3. 将 URL 发送回客户端
+    console.log(`[Upload] Received file: ${file.name}, size: ${file.size} bytes, type: ${file.type}`);
 
     // 计算过期时间：从现在开始的 1 天后
     const expirationDate = new Date();
     expirationDate.setDate(expirationDate.getDate() + 0.5);
     const maxAge = Math.floor((expirationDate.getTime() - Date.now()) / 1000);
-    const expiresHeader = expirationDate.toUTCString();
 
-    // 假设你使用 Cloudflare R2
-    const key = `${Date.now()}-${file.name}`;
-    await env.R2_BUCKET.put(key, file, {
-      httpMetadata: {
-        cacheControl: `max-age=${maxAge}`, // 设置缓存过期时间为 1 天
-        // cacheExpiry: expiresHeader, // 设置 Expires 头,二选一即可
-      }
-    });
-    const fileUrl = `/files/${key}`; // 假设你的 R2 bucket 绑定了 /files 路由
+    // 生成文件 key，并使用 URL 安全字符，避免中文路径编码问题
+    const key = makeSafeR2Key(file.name);
+    
+    // 将 File 对象转换为 ArrayBuffer
+    const arrayBuffer = await file.arrayBuffer();
+    console.log(`[Upload] ArrayBuffer size after conversion: ${arrayBuffer.byteLength} bytes`);
+    
+    if (arrayBuffer.byteLength === 0) {
+      return new Response(JSON.stringify({ 
+        error: "Empty file",
+        message: "File is empty after conversion"
+      }), { status: 400, headers: { "Content-Type": "application/json" } });
+    }
+
+    try {
+      await env.R2_BUCKET.put(key, arrayBuffer, {
+        httpMetadata: {
+          cacheControl: `max-age=${maxAge}`,
+          contentType: file.type || "application/octet-stream",
+        },
+        customMetadata: {
+          originalFileName: file.name,
+        },
+      });
+      console.log(`[Upload] File stored in R2 with key: ${key}`);
+    } catch (r2Error) {
+      console.error("[Upload] R2 upload failed:", r2Error);
+      return new Response(JSON.stringify({ 
+        error: "R2 Storage Error",
+        details: r2Error instanceof Error ? r2Error.message : "Unknown R2 error",
+        message: "Check Cloudflare R2 bucket configuration and permissions"
+      }), { status: 500, headers: { "Content-Type": "application/json" } });
+    }
+
+    // 验证文件是否真的存储了
+    try {
+      const stored = await env.R2_BUCKET.head(key);
+      console.log(`[Upload] Verification - File exists in R2, size: ${stored?.size || 0} bytes`);
+    } catch (err) {
+      console.error("[Upload] Could not verify file in R2:", err);
+    }
+    
+    const fileUrl = `/files/${key}`;
+    console.log(`[Upload] Returning download URL: ${fileUrl}`);
 
     // 返回文件 URL 给客户端
     return new Response(JSON.stringify({ url: fileUrl }), {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error handling file upload:", error);
-    return new Response("Internal Server Error", { status: 500 });
+    console.error("[Upload] Error handling file upload:", error);
+    return new Response(JSON.stringify({ 
+      error: "Internal Server Error",
+      details: error instanceof Error ? error.message : "Unknown error",
+    }), { status: 500, headers: { "Content-Type": "application/json" } });
+  }
+}
+
+// 处理文件下载
+async function handleFileDownload(request: Request, env: Env, key: string) {
+  if (request.method !== "GET") {
+    return new Response("Method not allowed", { status: 405 });
+  }
+
+  try {
+    console.log(`[Download] Requesting file with key: ${key}`);
+
+    // 从 R2 获取文件
+    const object = await env.R2_BUCKET.get(key);
+
+    if (!object) {
+      console.error(`[Download] File not found: ${key}`);
+      return new Response("File not found", { status: 404 });
+    }
+
+    console.log(`[Download] File found, size: ${object.size} bytes`);
+
+    if (object.size === 0) {
+      console.error(`[Download] File is empty in R2: ${key}`);
+      return new Response(JSON.stringify({ 
+        error: "Empty file in storage",
+        key: key,
+        size: 0
+      }), { status: 400, headers: { "Content-Type": "application/json" } });
+    }
+
+    // 提取文件名，如果存在元数据则使用原始文件名
+    const fileName = object.customMetadata?.originalFileName || key.split('-').slice(2).join('-');
+
+    // 返回文件
+    return new Response(object.body, {
+      headers: {
+        "Content-Type": object.httpMetadata?.contentType || "application/octet-stream",
+        "Content-Length": object.size.toString(),
+        "Content-Disposition": `attachment; filename="${fileName}"`,
+        "Cache-Control": "no-cache",
+      },
+    });
+  } catch (error) {
+    console.error("[Download] Error retrieving file:", error);
+    return new Response(JSON.stringify({ 
+      error: "Failed to download file",
+      details: error instanceof Error ? error.message : "Unknown error",
+    }), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 }
 export default {
   async fetch(request, env) {
-    // 路由 /upload 请求到 handleFileUpload 函数
     const url = new URL(request.url);
+    
+    // 路由 /upload POST 请求到 handleFileUpload 函数
     if (url.pathname === "/upload" && request.method === "POST") {
       return handleFileUpload(request, env);
     }
 
-    // 如果不是 /upload 请求，则继续使用 partykit 或 ASSETS
+    // 路由 /files/* GET 请求到 handleFileDownload 函数
+    if (url.pathname.startsWith("/files/") && request.method === "GET") {
+      const key = url.pathname.substring(7); // 移除 "/files/" 前缀
+      if (key) {
+        return handleFileDownload(request, env, key);
+      }
+    }
+
+    // 如果不是 /upload 或 /files/* 请求，则继续使用 partykit 或 ASSETS
     return (
       (await routePartykitRequest(request, { ...env })) ||
       env.ASSETS.fetch(request)

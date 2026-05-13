@@ -140,6 +140,29 @@ function App() {
     }
     document.body.removeChild(tempElement);
   };
+
+  const downloadFile = async (url: string, fileName?: string) => {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status}`);
+      }
+      const blob = await response.blob();
+      const downloadName = fileName || url.split('/').pop() || 'download';
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = objectUrl;
+      anchor.download = downloadName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(objectUrl);
+      toast.success(`开始下载 ${downloadName}`);
+    } catch (error) {
+      toast.error('下载失败！');
+      console.error('downloadFile error:', error);
+    }
+  };
   // 处理文件函数
   // 新增或修改 handleFiles 函数
   const handleFiles = async (files: FileList) => {
@@ -152,25 +175,33 @@ function App() {
       }
       // 创建一个加载中的 Toast，并保存它的 id
       const toastId = toast.loading(`正在上传 ${file.name}...`);
-      console.log("正在处理文件:", file.name, file.type, file.size);
+      console.log("=== [CLIENT UPLOAD START] ===");
+      console.log("File name:", file.name);
+      console.log("File type:", file.type);
+      console.log("File size:", file.size, "bytes");
+      
       const formData = new FormData();
       formData.append("file", file);
 
       try {
+        console.log("[CLIENT] Sending file to /upload endpoint...");
         const response = await fetch("/upload", {
           method: "POST",
           body: formData,
         });
 
+        console.log("[CLIENT] Response status:", response.status);
+        const data = await response.json();
+        
         if (response.ok) {
-          const data = await response.json();
+          console.log("[CLIENT] Upload successful, response data:", data);
           // Assuming the server responds with a URL to the uploaded file
           const fileUrl = data.url;
-          const messageContent = `<a href="${fileUrl}" target="_blank">Uploaded file: ${file.name}</a>`;
+          console.log("[CLIENT] File URL received:", fileUrl);
 
           const chatMessage: ChatMessage = {
             id: nanoid(8),
-            content: messageContent,
+            content: fileUrl,
             user: name,
             role: "user",
             msgtype: "file",
@@ -186,12 +217,17 @@ function App() {
             })
           );
           // 上传成功后更新 Toast 为成功提示
+          console.log("[CLIENT] Upload completed successfully");
           toast.success(`${file.name} 上传成功！`, { id: toastId });
-        } else { // 上传失败后更新 Toast 为失败提示
-          toast.error(`${file.name} 上传失败！`, { id: toastId }); toast.error('上传失败！');
+        } else { 
+          // 上传失败后更新 Toast 为失败提示
+          console.error("[CLIENT] Upload failed - response:", data);
+          toast.error(`${file.name} 上传失败！${data?.error || ""}`, { id: toastId });
           console.error("File upload failed.");
         }
-      } catch (error) {// 捕获错误后更新 Toast 为失败提示
+      } catch (error) {
+        // 捕获错误后更新 Toast 为失败提示
+        console.error("[CLIENT] Upload error:", error);
         toast.error(`${file.name} 上传失败！`, { id: toastId });
         console.error("Error uploading file:", error);
       }
@@ -329,52 +365,56 @@ function App() {
                 <div className="w-4/5 break-words">
                   {/* 根据消息类型判断如何渲染 */}
                   {message.msgtype === "file" ? (
-                    // 渲染文件链接
+                    // 渲染文件链接，使用程序化下载避免浏览器下载问题
                     <div>
-                      <a href={message.content} download={message.fileName} className="text-blue-500 hover:underline">
-                        {message.fileName}
-                      </a>
+                      <button
+                        type="button"
+                        onClick={() => downloadFile(message.content, message.fileName)}
+                        className="text-blue-500 hover:underline font-semibold"
+                      >
+                        📎 {message.fileName} ({message.content.includes('://') ? 'Remote' : 'Local'})
+                      </button>
                     </div>
                   ) : (
                     // 渲染预格式化文本,包含html标签
-                    <pre><div dangerouslySetInnerHTML={{ __html: message.content }} /></pre>
-                    // 不使用 dangerouslySetInnerHTML 时，可以直接渲染文本
-                    // <pre className="msgcontent whitespace-pre-wrap">{message.content}</pre>
+                    <>
+                      <pre><div dangerouslySetInnerHTML={{ __html: message.content }} /></pre>
+                      <span className="CopyTip hidden group-hover:block cursor-pointer" onClick={() => copyToClipboard(message.content)}>
+                        <svg
+                          style={{ display: 'inline' }}
+                          data-t="1724328544012"
+                          className="icon"
+                          viewBox="0 0 1024 1024"
+                          version="1.1"
+                          xmlns="http://www.w3.org/2000/svg"
+                          data-p-id="1486"
+                          width="18"
+                          height="18"
+                        >
+                          <path d="M960 960H256V256h704v704z m-640-64h576V320H320v576z" fill="#727272" data-p-id="1487"></path>
+                          <path d="M192 800H64V64h736v128h-64v-64H128v608h64z" fill="#727272" data-p-id="1488"></path>
+                          <path d="M752.7 395.7L629.4 672.4h-48.1L460.4 395.7h48.1L598.9 612c3 7.1 5.3 15.4 6.7 24.8h1.1c1.2-8.2 3.7-16.6 7.6-25.2l92.1-216h46.3z" fill="#E6C27C" data-p-id="1489"></path>
+                          <path d="M416 736h384v64H416z" fill="#727272" data-p-id="1490"></path>
+                        </svg>
+                      </span>
+                      {/* 新窗口打开图标 */}
+                      <span
+                        className="OpenTip hidden group-hover:block cursor-pointer ml-2"
+                        onClick={() => openInNewWindow(message.content)}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="#727272"
+                        >
+                          <path d="M0 0h24v24H0V0z" fill="none" />
+                          <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" />
+                        </svg>
+                      </span>
+                    </>
                   )}
-                    <span className="CopyTip hidden group-hover:block cursor-pointer" onClick={() => copyToClipboard(message.content)}>
-                    <svg
-                      style={{ display: 'inline' }}
-                      data-t="1724328544012"
-                      className="icon"
-                      viewBox="0 0 1024 1024"
-                      version="1.1"
-                      xmlns="http://www.w3.org/2000/svg"
-                      data-p-id="1486"
-                      width="18"
-                      height="18"
-                    >
-                      <path d="M960 960H256V256h704v704z m-640-64h576V320H320v576z" fill="#727272" data-p-id="1487"></path>
-                      <path d="M192 800H64V64h736v128h-64v-64H128v608h64z" fill="#727272" data-p-id="1488"></path>
-                      <path d="M752.7 395.7L629.4 672.4h-48.1L460.4 395.7h48.1L598.9 612c3 7.1 5.3 15.4 6.7 24.8h1.1c1.2-8.2 3.7-16.6 7.6-25.2l92.1-216h46.3z" fill="#E6C27C" data-p-id="1489"></path>
-                      <path d="M416 736h384v64H416z" fill="#727272" data-p-id="1490"></path>
-                    </svg>
-                  </span>
-                  {/* 新窗口打开图标 */}
-                  <span
-                    className="OpenTip hidden group-hover:block cursor-pointer ml-2" // 使用 ml-2 添加左侧间距
-                   onClick={() => openInNewWindow(message.content)}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="#727272"
-                    >
-                      <path d="M0 0h24v24H0V0z" fill="none" />
-                      <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" />
-                    </svg>
-                  </span>
                 </div>
               </li>
             </div>
